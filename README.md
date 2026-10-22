@@ -2,6 +2,9 @@
 
 A responsive full stack portfolio website with an animated, swipeable project gallery, dark/light mode, a downloadable resume and a contact form that emails me and stores messages in MongoDB.
 
+**Live site:** https://ayesha-siddiqa-portfolio.vercel.app
+**API:** https://portfolio-api-vzie.onrender.com/api/health
+
 ## Features
 - Sections for About, Skills, Projects, Resume (timeline and certificates) and Contact
 - Projects filter by category, with live demo and GitHub links
