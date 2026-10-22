@@ -2,11 +2,6 @@
 
 A responsive full stack portfolio website with an animated, swipeable project gallery, dark/light mode, a downloadable resume and a contact form that emails me and stores messages in MongoDB.
 
-**Live site:** https://YOUR-SITE-URL  
-**API:** https://YOUR-API-URL/api/health
-
-![Portfolio screenshot](docs/screenshot.png)
-
 ## Features
 - Sections for About, Skills, Projects, Resume (timeline and certificates) and Contact
 - Projects filter by category, with live demo and GitHub links
