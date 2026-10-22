@@ -2,9 +2,9 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import nodemailer from "nodemailer";
 
 const app = express();
+app.set("trust proxy", 1); // needed on Render so each visitor gets their own rate limit
 app.use(express.json({ limit: "10kb" }));
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*" }));
 
@@ -18,14 +18,6 @@ if (process.env.MONGODB_URI) {
   );
   console.log("MongoDB connected");
 }
-
-const port = Number(process.env.SMTP_PORT || 465);
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port,
-  secure: port === 465,
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-});
 
 // Allow 5 messages per IP every 15 minutes
 const hits = new Map();
@@ -59,15 +51,24 @@ app.post("/api/contact", rateLimit, async (req, res) => {
   try {
     if (Message) await Message.create({ name, email, message });
 
-    await transporter.sendMail({
-      from: `"Portfolio" <${process.env.SMTP_USER}>`,
-      to: process.env.NOTIFY_TO || process.env.SMTP_USER,
-      replyTo: email,
-      subject: `New portfolio message from ${name}`,
-      html: `<p><b>Name:</b> ${esc(name)}</p>
-             <p><b>Email:</b> ${esc(email)}</p>
-             <p>${esc(message).replace(/\n/g, "<br>")}</p>`
+    // Email via Resend's HTTPS API (works on Render's free tier, unlike SMTP)
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "Portfolio <onboarding@resend.dev>",
+        to: [process.env.NOTIFY_TO],
+        reply_to: email,
+        subject: `New portfolio message from ${name}`,
+        html: `<p><b>Name:</b> ${esc(name)}</p>
+               <p><b>Email:</b> ${esc(email)}</p>
+               <p>${esc(message).replace(/\n/g, "<br>")}</p>`
+      })
     });
+    if (!r.ok) throw new Error(`Resend error ${r.status}: ${await r.text()}`);
 
     res.json({ ok: true });
   } catch (err) {
@@ -76,4 +77,5 @@ app.post("/api/contact", rateLimit, async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 5000, () => console.log("API running on port " + (process.env.PORT || 5000)));
+const port = process.env.PORT || 5000;
+app.listen(port, () => console.log("API running on port " + port));
